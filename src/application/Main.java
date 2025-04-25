@@ -1,25 +1,39 @@
 package application;
 
 import db.DB;
-import db.exceptions.DbIntegrityException;
+import db.exceptions.DbException;
 
 import java.sql.*;
 
 public class Main {
     public static void main(String[] args) {
-        Connection connection;
-        PreparedStatement st = null;
+        Connection connection = null;
+        Statement st = null;
 
         try {
             connection = DB.getConnection();
-            st = connection.prepareStatement("delete from department where Id = ?");
-            st.setInt(1, 2);
+            connection.setAutoCommit(false);
+            st = connection.createStatement();
 
-            int rowsAffected = st.executeUpdate();
+            int rows1 = st.executeUpdate("update seller set BaseSalary = 2090 where DepartmentId = 1");
 
-            System.out.println("Done! Rows affected: " + rowsAffected);
+            /*int x = 1;
+            if (x < 2) {
+                throw new SQLException("Fake error");
+            }*/
+
+            int rows2 = st.executeUpdate("update seller set BaseSalary = 3090 where DepartmentId = 2");
+
+            connection.commit();
+            System.out.println("Rows 1: " + rows1);
+            System.out.println("Rows 2: " + rows2);
         } catch (SQLException e) {
-            throw new DbIntegrityException(e.getMessage());
+            try {
+                connection.rollback();
+                throw new DbException("Transaction rolled back! Caused by: " + e.getMessage());
+            } catch (SQLException e1) {
+                throw new DbException("Error trying to rollback! Caused by: " + e1.getMessage());
+            }
         } finally {
             DB.closeStatement(st);
             DB.closeConnection();
